@@ -52,7 +52,7 @@ struct CalibrationView: View {
             Text("Step \(step) of 2").font(.subheadline).foregroundStyle(.secondary)
             Text(phase == .waitingUp
                  ? "Place the phone face up on any flat, stable surface. Top edge pointing away from you."
-                 : "Turn it at least 90° flat in the same spot. Keep it face up.")
+                 : "Spin it 180° flat in the same spot. Keep it face up.")
                 .multilineTextAlignment(.center)
                 .font(.title3)
             Text("Hold still…").font(.subheadline).foregroundStyle(.secondary)
@@ -86,10 +86,10 @@ struct CalibrationView: View {
         switch phase {
         case .waitingUp: return m.z > 0.98
         case .waitingDown:
-            // Face up again, and turned at least ~70° from the first reading.
+            // Face up again, and turned roughly 180° from the first reading (±25°).
             var d = abs(model.yaw - yawUp).truncatingRemainder(dividingBy: 2 * .pi)
             if d > .pi { d = 2 * .pi - d }
-            return m.z > 0.98 && d > 1.2
+            return m.z > 0.98 && abs(d - .pi) < 0.44
         default: return false
         }
     }
@@ -107,7 +107,7 @@ struct CalibrationView: View {
             }
         case .waitingDown:
             guard let up = faceUp else { return }
-            model.saveCalibration(faceUp: up, rotated: m, yawChange: model.yaw - yawUp)
+            model.saveCalibration(faceUp: up, rotated: m)
             phase = .doneAll
             feedback()
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { dismiss() }

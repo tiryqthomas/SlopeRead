@@ -60,16 +60,11 @@ final class SlopeModel {
 
     // MARK: Calibration
 
-    /// up = reading face-up on the surface, other = reading face-up again after turning the phone flat in place by
-    /// yawChange radians (any turn of ~70° or more). Each reading = phone offset b + surface tilt p, and turning the
-    /// phone by d turns p by -d in the device frame while b stays put, so the two readings solve for both.
-    func saveCalibration(faceUp up: SIMD3<Double>, rotated other: SIMD3<Double>, yawChange d: Double) {
-        let c = cos(d), s = sin(d)
-        let dx = other.x - up.x, dy = other.y - up.y
-        let det = (c - 1) * (c - 1) + s * s            // p0 = (R - I)^-1 (r1 - r0), R = [[c, s], [-s, c]]
-        let px = ((c - 1) * dx - s * dy) / det
-        let py = (s * dx + (c - 1) * dy) / det
-        let b = Bias(x: up.x - px, y: up.y - py)
+    /// up = reading face-up on the surface, other = reading face-up again after spinning the phone ~180° flat in place.
+    /// The surface tilt reverses between the two readings while the phone's own offset (camera bump) does not,
+    /// so the average is the offset.
+    func saveCalibration(faceUp up: SIMD3<Double>, rotated other: SIMD3<Double>) {
+        let b = Bias(x: (up.x + other.x) / 2, y: (up.y + other.y) / 2)
         bias = b
         hasCalibration = true
         if let d = try? JSONEncoder().encode(b) { UserDefaults.standard.set(d, forKey: "slope.bias.v2") }
