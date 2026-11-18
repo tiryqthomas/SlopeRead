@@ -1,4 +1,6 @@
 import SwiftUI
+import AudioToolbox
+import UIKit
 
 /// Two-position calibration: cancels the tilt caused by the camera bump on the back of the phone.
 struct CalibrationView: View {
@@ -62,6 +64,8 @@ struct CalibrationView: View {
         if let up = faceUp {
             model.saveCalibration(faceUp: up, faceDown: m)
             done = true
+            AudioServicesPlaySystemSound(1057)   // "Tink"; muted by the silent switch
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { dismiss() }
         } else {
             faceUp = m
