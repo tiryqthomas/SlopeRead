@@ -83,12 +83,26 @@ final class SlopeModel {
         return 100 * c / (1 - c * c).squareRoot()
     }
 
+    /// Landscape: the screen's "up" (toward the hole) runs along the device's x axis.
+    /// +1 when it points along +x, -1 when along -x.
+    private var holeSign = 1.0
+
+    private func updateOrientation() {
+        let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
+        switch scene?.interfaceOrientation {
+        case .landscapeLeft: holeSign = -1
+        case .landscapeRight: holeSign = 1
+        default: break
+        }
+    }
+
     private func publish(_ u: SIMD3<Double>) {
-        upPercent = percent(u.y - bias.y)
-        sidePercent = percent(u.x - bias.x)
+        upPercent = percent(holeSign * (u.x - bias.x))       // along the line, + = uphill
+        sidePercent = percent(-holeSign * (u.y - bias.y))    // across the line, + = right side higher
     }
 
     private func process(_ m: CMDeviceMotion) {
+        updateOrientation()
         let u = SIMD3(-m.gravity.x, -m.gravity.y, -m.gravity.z)
         let r = m.rotationRate
         let w = (r.x * r.x + r.y * r.y + r.z * r.z).squareRoot()

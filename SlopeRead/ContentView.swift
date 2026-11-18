@@ -36,7 +36,7 @@ struct ContentView: View {
                     .font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer()
-            Label("Top edge toward hole", systemImage: "arrow.up")
+            Label("Screen top toward hole", systemImage: "arrow.up")
                 .font(.subheadline).foregroundStyle(.secondary)
             Button { showCalibration = true } label: {
                 Label(model.hasCalibration ? "Calibrated" : "Calibrate", systemImage: "scope")
