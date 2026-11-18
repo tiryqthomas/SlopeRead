@@ -55,15 +55,16 @@ struct ContentView: View {
     }
 
     private func card(title: String, value: Double, positive: String, negative: String) -> some View {
-        let level = abs(value) < 0.005
+        let shown = (abs(value) * 2).rounded() / 2   // nearest 0.5 %
+        let level = shown == 0
         return VStack(spacing: 10) {
             Text(title).font(.headline).foregroundStyle(.secondary)
             Spacer(minLength: 0)
-            Text(String(format: "%.2f%%", abs(value)))
+            Text(String(format: "%.1f%%", shown))
                 .font(.system(size: 76, weight: .semibold, design: .default))
                 .monospacedDigit()
                 .minimumScaleFactor(0.5)
-                .contentTransition(.numericText(value: abs(value)))
+                .contentTransition(.numericText(value: shown))
             Text(level ? "Level" : (value > 0 ? positive : negative))
                 .font(.title3.weight(.medium))
             Spacer(minLength: 0)
