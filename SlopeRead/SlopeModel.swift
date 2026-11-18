@@ -31,11 +31,12 @@ final class SlopeModel {
     var faceUp = true
     var stillMean: SIMD3<Double>?   // raw mean when phone has been still for `window`
     var stillProgress = 0.0         // 0…1 toward lock
+    var yaw = 0.0                   // radians, arbitrary reference (used to check the 180° spin)
     var bias = Bias(x: 0, y: 0)
     var hasCalibration = false
 
     init() {
-        if let d = UserDefaults.standard.data(forKey: "slope.bias.v1"),
+        if let d = UserDefaults.standard.data(forKey: "slope.bias.v2"),
            let b = try? JSONDecoder().decode(Bias.self, from: d) {
             bias = b
             hasCalibration = true
@@ -59,19 +60,20 @@ final class SlopeModel {
 
     // MARK: Calibration
 
-    /// up = reading face-up on the surface, down = reading face-down (flipped like a book, top edge same direction).
-    /// Back of phone has the camera bump (bias); screen is flat.
-    func saveCalibration(faceUp up: SIMD3<Double>, faceDown down: SIMD3<Double>) {
-        let b = Bias(x: up.x + down.x, y: up.y - down.y)
+    /// up = reading face-up on the surface, other = reading face-up again after spinning the phone ~180° flat in place.
+    /// The surface tilt reverses between the two readings while the phone's own offset (camera bump) does not,
+    /// so the average is the offset.
+    func saveCalibration(faceUp up: SIMD3<Double>, rotated other: SIMD3<Double>) {
+        let b = Bias(x: (up.x + other.x) / 2, y: (up.y + other.y) / 2)
         bias = b
         hasCalibration = true
-        if let d = try? JSONEncoder().encode(b) { UserDefaults.standard.set(d, forKey: "slope.bias.v1") }
+        if let d = try? JSONEncoder().encode(b) { UserDefaults.standard.set(d, forKey: "slope.bias.v2") }
     }
 
     func clearCalibration() {
         bias = Bias(x: 0, y: 0)
         hasCalibration = false
-        UserDefaults.standard.removeObject(forKey: "slope.bias.v1")
+        UserDefaults.standard.removeObject(forKey: "slope.bias.v2")
     }
 
     // MARK: Processing
@@ -96,6 +98,7 @@ final class SlopeModel {
         while let f = buffer.first, t - f.t > window { buffer.removeFirst() }
 
         faceUp = u.z > 0
+        yaw = m.attitude.yaw
         isFlat = abs(u.z) > flatLimit
 
         let span = (buffer.last?.t ?? t) - (buffer.first?.t ?? t)
